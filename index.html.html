@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>· Reforzamiento </title>
+    <!-- Tailwind CSS desde CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuentes Google: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Transiciones suaves */
+        .option-card {
+            transition: all 0.25s ease-in-out;
+        }
+        .option-card:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .feedback-box {
+            transition: all 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .feedback-box.active {
+            max-height: 200px;
+            opacity: 1;
+            margin-top: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        
+        <!-- Encabezado del Cuestionario -->
+        <header class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 md:p-8 text-white">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <span class="inline-block bg-white/20 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
+                        Derecho a la justicia en su modalidad de procuración. Recomendación 60VG/2022 de la CNDH
+
+                    </span>
+                    <h1 class="text-2xl md:text-3xl font-bold"> Reforzamiento </h1>
+                    <p class="text-blue-100 text-sm md:text-base mt-1">Indicación: Elija la opción que corresponde; si no acierta, puede intentarlo de nuevo.
+</p>
+                </div>
+                <!-- Contador / Puntaje -->
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 text-center border border-white/20 min-w-[140px]">
+                    <span class="text-xs font-medium text-blue-100 block uppercase">Puntaje</span>
+                    <span id="score-display" class="text-3xl font-extrabold">0 / 6</span>
+                </div>
+            </div>
+
+            <!-- Barra de Progreso -->
+            <div class="w-full bg-blue-900/40 h-2.5 rounded-full mt-6 overflow-hidden">
+                <div id="progress-bar" class="bg-emerald-400 h-full w-0 transition-all duration-500 ease-out"></div>
+            </div>
+        </header>
+
+        <!-- Contenido principal: Contenedor de preguntas -->
+        <main class="p-6 md:p-8 space-y-8" id="quiz-container">
+            <!-- Las preguntas se cargarán dinámicamente mediante JS -->
+        </main>
+
+        <!-- Panel de Resultado Final y Reintento -->
+        <footer class="bg-slate-100 p-6 md:p-8 border-t border-slate-200 text-center">
+            <div id="final-result-card" class="hidden mb-6 p-6 rounded-xl bg-white border border-slate-200 shadow-sm max-w-lg mx-auto">
+                <div id="final-icon" class="text-5xl mb-3">🏆</div>
+                <h2 id="final-title" class="text-2xl font-bold text-slate-800">¡Cuestionario Completado!</h2>
+                <p id="final-message" class="text-slate-600 mt-2 text-sm md:text-base"></p>
+            </div>
+
+            <button onclick="resetQuiz()" class="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition duration-200 shadow-md hover:shadow-lg active:scale-95">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Reiniciar Cuestionario</span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Script de Lógica del Cuestionario -->
+    <script>
+        // Estructura de Datos de las Preguntas con el contenido exacto proporcionado
+        const quizData = [
+            {
+                id: 1,
+                question: "1. V acudió a la CNDH con una queja porque la CI 1 no se había resuelto. ¿Qué vía de protección utilizó?",
+                options: [
+                    { text: "Protección jurisdiccional", correct: false, feedback: "Aún no. Observe ante qué organismo acudió V y qué tipo de resolución emite. Revise el tema 2.5 del compendio." },
+                    { text: "Protección no jurisdiccional", correct: true, feedback: "¡Correcto! La queja ante la CNDH es protección no jurisdiccional: concluye con recomendaciones públicas no vinculatorias (tema 2.5)." }
+                ]
+            },
+            {
+                id: 2,
+                question: "2. El punto primero pide agotar las líneas de investigación para esclarecer los hechos y determinar conforme a derecho. ¿Qué deber del Estado atiende?",
+                options: [
+                    { text: "Investigar", correct: true, feedback: "¡Así es! Investigar seriamente, con los medios al alcance, permite identificar a las personas responsables, como pide el punto primero (tema 2.6, deberes del Estado)." },
+                    { text: "Prevenir", correct: false, feedback: "Inténtelo de nuevo. Fíjese en qué se pide hacer con la carpeta: actuar antes de una violación, atender a la víctima o esclarecer lo ocurrido. Revise el tema 2.6 del compendio." },
+                    { text: "Reparar", correct: false, feedback: "Inténtelo de nuevo. Fíjese en qué se pide hacer con la carpeta: actuar antes de una violación, atender a la víctima o esclarecer lo ocurrido. Revise el tema 2.6 del compendio." }
+                ]
+            },
+            {
+                id: 3,
+                question: "3. El punto segundo pide colaborar en el trámite y seguimiento de la denuncia administrativa contra AR6 por la falta de debida diligencia. ¿Qué deber del Estado atiende?",
+                options: [
+                    { text: "Prevenir", correct: false, feedback: "Todavía no. Observe a quién se dirige la denuncia y cuál sería su consecuencia para esa persona. Revise el tema 2.6 del compendio." },
+                    { text: "Reparar", correct: false, feedback: "Todavía no. Observe a quién se dirige la denuncia y cuál sería su consecuencia para esa persona. Revise el tema 2.6 del compendio." },
+                    { text: "Sancionar", correct: true, feedback: "¡Bien! La denuncia administrativa busca que la persona responsable reciba la sanción pertinente, lo que corresponde al deber de sancionar (tema 2.6, deberes del Estado)." }
+                ]
+            },
+            {
+                id: 4,
+                question: "4. El punto tercero pide capacitar al personal para evitar la transgresión al derecho a la verdad y al acceso a la justicia. ¿Qué deber del Estado atiende?",
+                options: [
+                    { text: "Sancionar", correct: false, feedback: "Aún no. Fíjese en si la medida mira hacia lo ocurrido o hacia lo que se busca evitar en el futuro. Revise el tema 2.6 del compendio." },
+                    { text: "Prevenir", correct: true, feedback: "¡Correcto! Capacitar al personal para evitar nuevas transgresiones es una forma de prevenir razonablemente las violaciones de los derechos humanos (tema 2.6, deberes del Estado)." }
+                ]
+            },
+            {
+                id: 5,
+                question: "5. El punto cuarto pide tramitar y otorgar a la víctima una adecuada reparación integral por las violaciones sufridas durante la integración de la carpeta. ¿Qué deber del Estado atiende?",
+                options: [
+                    { text: "Investigar", correct: false, feedback: "Inténtelo de nuevo. Observe que el interés se centra en el daño que sufrió V, no en la investigación ni en evitar hechos futuros. Revise el tema 2.6 del compendio." },
+                    { text: "Prevenir", correct: false, feedback: "Inténtelo de nuevo. Observe que el interés se centra en el daño que sufrió V, no en la investigación ni en evitar hechos futuros. Revise el tema 2.6 del compendio." },
+                    { text: "Reparar", correct: true, feedback: "¡Exacto! Asegurar a la víctima una adecuada reparación es el deber de reparar (tema 2.6, deberes del Estado)." }
+                ]
+            },
+            {
+                id: 6,
+                question: "6. AR6, a cargo de la CI 1, es una autoridad que no ejerce funciones jurisdiccionales. ¿Qué alcance tiene frente a los derechos humanos en juego?",
+                options: [
+                    { text: "Interpretar de la manera más favorable", correct: true, feedback: "¡Así es! Como el Ministerio Público no ejerce funciones jurisdiccionales, no declara la invalidez ni desaplica normas: interpreta los derechos de la manera que más los favorezca (tema 2.6)." },
+                    { text: "Declarar la invalidez", correct: false, feedback: "Todavía no. Recuerde que el modelo distingue a las personas juzgadoras federales, a las demás y a las autoridades que no juzgan. Revise el tema 2.6 del compendio." },
+                    { text: "Desaplicar en el caso concreto", correct: false, feedback: "Todavía no. Recuerde que el modelo distingue a las personas juzgadoras federales, a las demás y a las autoridades que no juzgan. Revise el tema 2.6 del compendio." }
+                ]
+            }
+        ];
+
+        // Variables del Estado
+        let score = 0;
+        let answeredCount = 0;
+        const userAnswers = {}; // Guarda estado por pregunta
+
+        // Renderizar Cuestionario
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            quizData.forEach((q, qIndex) => {
+                const qCard = document.createElement('div');
+                qCard.className = "bg-white p-6 rounded-xl border border-slate-200 shadow-sm transition hover:border-slate-300";
+                
+                let optionsHTML = '';
+                q.options.forEach((opt, optIndex) => {
+                    optionsHTML += `
+                        <button 
+                            onclick="handleSelectOption(${qIndex}, ${optIndex})"
+                            id="btn-${qIndex}-${optIndex}"
+                            class="option-card w-full text-left p-4 rounded-xl border border-slate-200 bg-slate-50 flex items-start gap-3 hover:bg-slate-100 font-medium text-slate-700"
+                        >
+                            <span class="w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center text-xs font-bold shrink-0 bg-white text-slate-500 mt-0.5" id="circle-${qIndex}-${optIndex}">
+                                ${String.fromCharCode(65 + optIndex)}
+                            </span>
+                            <span class="flex-grow">${opt.text}</span>
+                            <i id="icon-${qIndex}-${optIndex}" class="fa-solid hidden text-lg"></i>
+                        </button>
+                    `;
+                });
+
+                qCard.innerHTML = `
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">${q.question}</h3>
+                    <div class="grid grid-cols-1 gap-3">
+                        ${optionsHTML}
+                    </div>
+                    <div id="feedback-${qIndex}" class="feedback-box rounded-xl p-4 text-sm font-medium"></div>
+                `;
+
+                container.appendChild(qCard);
+            });
+        }
+
+        // Manejar Selección de Opción
+        function handleSelectOption(qIndex, optIndex) {
+            // Si ya respondió esta pregunta, no permitir cambiar
+            if (userAnswers[qIndex] !== undefined) return;
+
+            const question = quizData[qIndex];
+            const selectedOpt = question.options[optIndex];
+            const feedbackBox = document.getElementById(`feedback-${qIndex}`);
+            
+            // Marcar estado como respondido
+            userAnswers[qIndex] = optIndex;
+            answeredCount++;
+
+            // Deshabilitar todos los botones de esta pregunta
+            question.options.forEach((_, idx) => {
+                const btn = document.getElementById(`btn-${qIndex}-${idx}`);
+                btn.classList.add('disabled', 'cursor-default');
+                btn.classList.remove('hover:bg-slate-100', 'hover:border-slate-300');
+            });
+
+            const selectedBtn = document.getElementById(`btn-${qIndex}-${optIndex}`);
+            const selectedCircle = document.getElementById(`circle-${qIndex}-${optIndex}`);
+            const selectedIcon = document.getElementById(`icon-${qIndex}-${optIndex}`);
+
+            // Evaluación de respuesta
+            if (selectedOpt.correct) {
+                score++;
+                // Estilos para respuesta CORRECTA (Verde)
+                selectedBtn.className = "option-card w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold flex items-start gap-3";
+                selectedCircle.className = "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-emerald-600 text-white mt-0.5";
+                selectedIcon.className = "fa-solid fa-circle-check text-emerald-600 text-lg block";
+                
+                // Mensaje Retroalimentación
+                feedbackBox.className = "feedback-box active bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl p-4 text-sm";
+                feedbackBox.innerHTML = `<div class="flex items-start gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-emerald-600"></i><div><strong>¡Correcto!</strong> ${selectedOpt.feedback}</div></div>`;
+            } else {
+                // Estilos para respuesta INCORRECTA (Rojo)
+                selectedBtn.className = "option-card w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-900 font-semibold flex items-start gap-3";
+                selectedCircle.className = "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-rose-600 text-white mt-0.5";
+                selectedIcon.className = "fa-solid fa-circle-xmark text-rose-600 text-lg block";
+                
+                // Mensaje Retroalimentación
+                feedbackBox.className = "feedback-box active bg-rose-100 text-rose-800 border border-rose-200 rounded-xl p-4 text-sm";
+                feedbackBox.innerHTML = `<div class="flex items-start gap-2"><i class="fa-solid fa-circle-xmark mt-0.5 text-rose-600"></i><div><strong>Incorrecto.</strong> ${selectedOpt.feedback}</div></div>`;
+
+                // Resaltar opcionalmente la opción correcta en verde sutil para orientación pedagógica
+                question.options.forEach((opt, idx) => {
+                    if (opt.correct) {
+                        const correctBtn = document.getElementById(`btn-${qIndex}-${idx}`);
+                        correctBtn.classList.add('border-emerald-300', 'bg-emerald-50/50');
+                    }
+                });
+            }
+
+            updateProgress();
+        }
+
+        // Actualizar barra de progreso y puntaje
+        function updateProgress() {
+            document.getElementById('score-display').innerText = `${score} / ${quizData.length}`;
+            const percentage = (answeredCount / quizData.length) * 100;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+
+            // Si se completaron todas las preguntas
+            if (answeredCount === quizData.length) {
+                showFinalResults();
+            }
+        }
+
+        // Mostrar Panel Final al completar
+        function showFinalResults() {
+            const finalCard = document.getElementById('final-result-card');
+            const finalTitle = document.getElementById('final-title');
+            const finalMessage = document.getElementById('final-message');
+            const finalIcon = document.getElementById('final-icon');
+
+            finalCard.classList.remove('hidden');
+
+            const percentage = (score / quizData.length) * 100;
+
+            if (percentage === 100) {
+                finalIcon.innerText = "🏆";
+                finalTitle.innerText = "¡Excelente desempeño!";
+                finalMessage.innerText = `Has obtenido ${score} de ${quizData.length} puntos (${percentage}%). Demostraste un dominio completo de los conceptos.`;
+            } else if (percentage >= 60) {
+                finalIcon.innerText = "🌟";
+                finalTitle.innerText = "¡Buen trabajo!";
+                finalMessage.innerText = `Obtuviste ${score} de ${quizData.length} puntos (${Math.round(percentage)}%). Tienes una muy buena base de conocimiento.`;
+            } else {
+                finalIcon.innerText = "📚";
+                finalTitle.innerText = "Sigue intentando";
+                finalMessage.innerText = `Obtuviste ${score} de ${quizData.length} puntos (${Math.round(percentage)}%). Te recomendamos repasar los temas e intentarlo nuevamente.`;
+            }
+
+            // Desplazar suavemente hasta el resultado
+            finalCard.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Reiniciar Cuestionario
+        function resetQuiz() {
+            score = 0;
+            answeredCount = 0;
+            for (let member in userAnswers) delete userAnswers[member];
+            
+            document.getElementById('score-display').innerText = `0 / ${quizData.length}`;
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('final-result-card').classList.add('hidden');
+
+            renderQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Inicializar al cargar ventana
+        window.onload = function() {
+            renderQuiz();
+        };
+    </script>
+</body>
+</html>
